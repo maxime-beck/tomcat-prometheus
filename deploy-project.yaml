@@ -1,0 +1,76 @@
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: tomcat-prometheus
+  labels:
+    run: tomcat-prometheus
+    app: tomcat-prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: tomcat-prometheus
+  template:
+    metadata:
+      creationTimestamp: 
+      labels:
+        run: tomcat-prometheus
+    spec:
+      containers:
+      - name: tomcat-prometheus
+        image: maxbeck/tomcat-prometheus
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: web
+          containerPort: 9090
+          protocol: TCP
+        resources: {}
+  strategy: {}
+---
+kind: Service
+apiVersion: v1
+metadata: 
+ name: tomcat-prometheus
+ labels: 
+   app: tomcat-prometheus
+   run: tomcat-prometheus
+spec:
+ ports: 
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  - name: web
+    port: 9090
+    protocol: TCP
+    targetPort: web  
+ selector: 
+   run: tomcat-prometheus
+status: 
+ loadBalancer: 
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: 'true'
+  labels:
+    run: tomcat-prometheus
+  name: tomcat-prometheus
+  namespace: tomcat-prometheus
+spec:
+  host: tomcat-prometheus-tomcat-prometheus.router.default.svc.cluster.local
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: tomcat-prometheus
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress:
+  - host: tomcat-prometheus-tomcat-prometheus.router.default.svc.cluster.local
+    routerName: router
+    wildcardPolicy: None
